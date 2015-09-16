@@ -1,0 +1,430 @@
+#!/bin/sh 
+RCCS="@(#)Cfg2Html2 Version 1.0"          # useful for what (1)
+VERSION=$(echo $RCCS | cut -c5-)
+BASENAME=`basename $0`
+SYSTEM=$(uname -s)
+HOSTNAME=$(uname -n)
+UNAMEA=$(uname -a)
+EXTENDED=0
+VERBOSE=0
+firstTime="true"
+
+#  This is probably the only variable that you should have to set.
+#  Everything else is configurable through arguments.
+#
+PLUGINS="/usr/local/ct/cfg2html2"
+
+#  If you don't want to always set -e, -c, and -o as arguments then you can
+#  set the variables here
+OUTDIR="/tmp"	# -o 
+CFGFILE="$PLUGINS/$SYSTEM/cfg2html.cfg" # -c 
+VARFILE="$PLUGINS/$SYSTEM/cfg2html.var" # -e   
+SCRIPTBASE="$PLUGINS/$SYSTEM"
+
+PATH=$SCRIPTBASE:$PATH:/usr/sbin
+
+
+# echo -e doesn't work on all systems. Here is a way to get it to work
+# as we expect it to.
+if [ "X`echo -e`" = "X-e" ]; then
+  echo_e() { echo ${1+"$@"}"\n"; }
+else
+  echo_e() { echo -e ${1+"$@"}; }
+fi
+
+######################################################################
+# usage: show the options for this script
+######################################################################
+usage ()
+{
+  echo_e "\n usage: $BASENAME [ options ]"
+  echo_e "\n creates HTML and plain ASCII host documentation"
+  echo ""
+  echo " -c set configuration file. Defaults to $BASENAME.cfg"
+  echo " -e set machine specific variable file "
+  echo " -o set directory to write output files "
+  echo " -0 (null)	append the current date+time to output file (D-M-Y-hhmm)"
+  echo " -1 (one)  	append the current date to output file (D-M-Y)"
+  echo " -2 modifier	like option -1, you can use date + modifier e.g. -2%d%m"
+  echo " -h display this help and exit "
+  echo " -v output version information and exit "
+  echo " -x eXtended output "
+  echo " -y Verbose (debug) output "
+  echo ""
+}
+
+GetOpts ()
+{
+ while getopts "o:2:01ehvVxXyY" Option
+ do
+    case $Option in
+       0   ) C2H_DATE="_"$(date +%d-%b-%Y-%H%M) ;;   
+       1   ) C2H_DATE="_"$(date +%d-%b-%Y) ;;       
+       2   ) C2H_DATE="_"$(date +$OPTARG) ;;       
+       h   ) usage; exit         ;; #   Usage 
+       e   ) VARFILE=$PLUGINS/$SYSTEM/$OPTARG	  ;; 
+       o   ) OUTDIR=$OPTARG       ;;
+       c   ) CFGFILE=$PLUGINS/$SYSTEM/$OPTARG      ;; 
+       v|V ) echo $VERSION; exit ;; #   Print version 
+       x|X ) EXTENDED=1  ;; # Extra Information
+       y|Y ) VERBOSE=1   ;; # show more Info on screen
+       *   ) "Invalid option. "; usage; exit;;
+    esac
+ done
+
+ shift $(($OPTIND - 1))
+}
+
+
+InitVars ()
+{
+
+ CFG2HTML=true
+ includeNAinHTML="yes"  # Information about this variable is located
+			# in the $VARFILE.
+ DATE=$(date "+%Y-%m-%d")                 # ISO8601 compliant date string
+ DATEFULL=$(date "+%Y-%m-%d - %H:%M:%S")  # ISO8601 compliant date and time string
+ CURRDATE=$(date +"%b %e %Y")
+ NODE=$(uname -n) 
+ USER=`id | cut -f2 -d"(" | cut -f1 -d")"`
+ PROCID=$$
+ HTML_STATUS="CLOSE"
+ TEXT_STATUS="CLOSE"
+ ERROR_LOG="$OUTDIR/$HOSTNAME.err"
+ HTML_OUTFILE="$OUTDIR/$HOSTNAME.html"
+ HTML_OUTFILE_TEMP="/tmp/$HOSTNAME.html."$$
+ TEXT_OUTFILE="$OUTDIR/$HOSTNAME.txt"
+ TEXT_OUTFILE_TEMP="/tmp/$HOSTNAME.txt."$$
+ HEADL=0
+
+
+#trap 2=SIGINT / 13=SIGPIPE / 15=SIGTERM / 18=SIGTSTP
+ trap " "               HUP
+ trap "Handle_SIGINT"   2  # ctrl-c
+ trap "Handle_SIGPIPE"  13  # ??
+ trap "Handle_SIGTERM" 15  # kill
+ trap "Handle_SIGTSTP" 18  # ctrl-z
+
+ ####################### CHANGE THIS!!!!!!!!!!!!!!!!!!!!!!!
+ #exec 2>$ERROR_LOG
+
+# Convert illegal characters for HTML into escaped ones.
+# Convert '&' first! (Peter Bisset [pbisset@emergency.qld.gov.au])
+CONVSTR='
+s/&/\&amp;/g
+s/</\&lt;/g
+s/>/\&gt;/g
+s/\\/\&#92;/g
+'
+
+# ...
+ SEP="================================" # 32
+ SEP10="==========" #10
+ SEP20="====================" #20
+ SEP30=${SEP20}""${SEP10}
+ SEP40=${SEP20}""${SEP20}
+ SEP60=${SEP40}""${SEP20}
+ SEP70=${SEP40}""${SEP20}""${SEP10}
+ SEP80=${SEP40}""${SEP40}
+ SEP90=${SEP40}""${SEP40}""${SEP10}
+ SEP100=${SEP40}""${SEP40}""${SEP20}
+ SEP120=${SEP40}""${SEP40}""${SEP40}
+#
+
+
+}
+
+LoadSystemVariables ()
+{
+
+  # Load any OS or system specific variables
+  # The file name and location are configured using 
+  # $PLUGINS/$SYSTEM/$VARFILE  (-e argument)
+  if [ -f $VARFILE ]
+  then
+   . $VARFILE
+  fi
+
+}
+LogMessage ()
+{
+  #This function is called whenever a message should be logged
+  #into a log file or error file.
+  DATEFULL=$(date "+%Y-%m-%d - %H:%M:%S")
+  case $1 in
+    ErrorRegMessage )
+      shift
+      echo "$DATEFULL $*" >> $ERROR_LOG
+      ;;
+    LogRegMessage )
+	#################### WHERE DOES THIS GO????????
+	shift
+        echo $DATEFULL $*
+	;;
+    * )
+	#################### WHERE DOES THIS GO????????
+        echo $DATEFULL $*
+	;;
+  esac
+
+  # If the script was called with the EXTENDED flag set (-e) then
+  # the user wants more information in the error log file.
+  if [ $EXTENDED = 1 ]; then
+     echo "$DATEFULL $*" >> $ERROR_LOG
+  fi
+
+  # If the script was called with the VERBOSE flag set (-v) then
+  # the user wants more information placed on the screen.
+  if [ $VERBOSE = 1 ]; then
+     DATEFULL=$(date "+%Y-%m-%d - %H:%M:%S")
+     echo "$DATEFULL $*" 
+  fi
+}
+
+testUser ()
+{
+  ## test if user = root
+  #
+  if [ `id|cut -c1-6` != "uid=0(" ] ; then        # 140906 rar, 160608 johnamurf
+	echo "This script must run as root."
+	exit 1
+  fi
+}
+
+new_category ()
+{
+	if [ "$firstTime" = "true" ]
+	then
+	  firstTime="false"
+	else
+	  dec_heading_level
+	fi
+	paragraph "$1"
+	inc_heading_level
+}
+cat_file ()
+{
+  #This is a wrapper script for the exec_command function.
+  #We'll first verify that the file exists and then we'll pass the
+  #file name and section title to the exec_command function.
+  curFile="$1"
+  title="$2"
+  [ -r $curFile ] && exec_command "cat $curFile" "$title"
+}
+######################################################################
+# exec_command: Documents the single commands and their output
+#  $1 = unix command $2 = text for the heading
+######################################################################
+exec_command ()
+{
+   WriteOutput="yes"
+   DoNotLogMe="OKToLog"
+   cmd=$1
+   if [ -z "$2" ] ; then      # if string 2 is zero
+      title="$1"
+   else
+      shift
+      title="$*"
+   fi
+   # You can run scripts from the CFG file. 
+   # In these scripts, you can call exec_command.
+   # This is great but the effect is the "parent" call 
+   # will end up in the output file and will be blank
+   # because the script doesn't know that it is just a 
+   # stub to run the actual script.  We set the title to
+   # HIDE to tell the script to not log this actual command 
+   if [ "$title" = "HIDE" ]
+   then
+	DoNotLogMe="DoNotLogMe"
+   fi
+  LogMessage Running $title +++
+
+   echo_e "\n---=[ $title ]=----------------------------------------------------------------" |
+      cut -c1-74 >> $TEXT_OUTFILE_TEMP
+   echo "       - $title" >> $TEXT_OUTFILE
+
+     ######========================##########
+     ###### the real working horse ##########
+     ######========================##########
+     TMP_EXEC_COMMAND_ERR=/tmp/exec_cmd.tmp.$$
+     EXECRES=$(eval $cmd 2> $TMP_EXEC_COMMAND_ERR | expand | \
+		cut -c 1-150 | sed "$CONVSTR")
+   if [ -z "$EXECRES" ] ; then
+     EXECRES="n/a or not configured!"
+     if [ $includeNAinHTML = "no" ]
+     then
+        WriteOutput="no"
+     fi
+   fi
+
+   if [ -s $TMP_EXEC_COMMAND_ERR ] ; then
+      LogMessage ErrorRegMessage ${SEP120} 
+      LogMessage ErrorRegMessage stderr output from \"$cmd\": 
+      cat $TMP_EXEC_COMMAND_ERR | sed 's/^/    /' >> $ERROR_LOG
+   fi
+   rm -f $TMP_EXEC_COMMAND_ERR  2>/dev/null  
+   
+   if [ $DoNotLogMe = "OKToLog" ] && [ $WriteOutput = "yes" ] 
+   then
+   	writeExecOutput
+   fi
+}
+
+writeExecOutput()
+{
+   # write header above output
+   echo_e "\n" >> $HTML_OUTFILE_TEMP
+
+   # write title with or without screentips
+   if [ "$STINLINE" = "YES" ]   
+   then
+     echo_e  "<A NAME=\"${title}\"></A> <H${HEADL}><A HREF=\"#Content-${title}\" title=\"${title}\"> $title </A></H${HEADL}>\n" >> $HTML_OUTFILE_TEMP     
+   else
+     # or more netscape friendly inline?
+     echo_e "<A NAME=\"$title\"></A> <A HREF=\"#Content-$title\"><H${HEADL}>$title </H${HEADL}></A>\n" >>$HTML_OUTFILE_TEMP
+   fi
+
+   # show cmd used to produce the output
+   if [ "X$cmd" = "X$title" ]
+   then    : #no need to duplicate, do nothing
+   else
+     echo "<h6>$cmd</h6>" >>$HTML_OUTFILE_TEMP
+     echo "Cmd: $cmd"     >>$TEXT_OUTFILE_TEMP
+     echo "====   "     >>$TEXT_OUTFILE_TEMP
+     echo "       "     >>$TEXT_OUTFILE_TEMP
+   fi
+
+   # write output to text file
+   echo_e "$EXECRES\n" >> $TEXT_OUTFILE_TEMP
+
+   # display content of ($EXECRES)
+   echo_e "<PRE>$EXECRES</PRE>\n"  >> $HTML_OUTFILE_TEMP     # write contents
+
+   echo_e "<LI><A NAME=\"Content-$title\"></A><A HREF=\"#$title\" title=\"$title\"\>$title</A>\n" >> $HTML_OUTFILE     # writes header of index
+}
+
+####################################################################
+#  Header of HTML file
+####################################################################
+
+open_html() {
+echo_e "\
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML> <HEAD>
+ <META NAME="GENERATOR" CONTENT="Selfmade-$VERSION">
+ <META NAME="AUTHOR" CONTENT="Ralph Roth, Michael Meifert">
+ <META NAME="CREATED" CONTENT="Ralph Roth, Michael Meifert">
+ <META NAME="CHANGED" CONTENT="`id;date` ">
+ <META NAME="DESCRIPTION" CONTENT="$Header: /cygdrive/e/CVSROOT/cfg2html_linux/cfg2html-linux,v 1.58 2009/02/18 22:02:51 ralproth Exp $">
+ <META NAME="subject" CONTENT="$VERSION on $HOSTNAME by $MAILTO and $MAILTORALPH">
+<style type="text/css">
+/* (c) 2001-2009 by Chris Ryan
+ * CSS for cfg2html2.sh, 12.04.2001, initial creation
+ */
+
+Pre		{Font-Family: Courier-New, Courier;Font-Size: 10pt}
+BODY		{FONT-FAMILY: Arial, Verdana, Helvetica, Sans-serif; FONT-SIZE: 12pt;}
+A		{FONT-FAMILY: Arial, Verdana, Helvetica, Sans-serif}
+A:link 		{text-decoration: none}
+A:visited 	{text-decoration: none}
+A:hover 	{text-decoration: underline}
+A:active 	{color: red; text-decoration: none}
+
+H1		{FONT-FAMILY: Arial, Verdana, Helvetica, Sans-serif;FONT-SIZE: 20pt}
+H2		{FONT-FAMILY: Arial, Verdana, Helvetica, Sans-serif;FONT-SIZE: 14pt}
+H3		{FONT-FAMILY: Arial, Verdana, Helvetica, Sans-serif;FONT-SIZE: 12pt}
+DIV, P, OL, UL, SPAN, TD
+		{FONT-FAMILY: Arial, Verdana, Helvetica, Sans-serif;FONT-SIZE: 11pt}
+
+</style>
+
+<TITLE>${HOSTNAME} - Documentation - $VERSION</TITLE>
+</HEAD><BODY>
+<BODY LINK="#0000ff" VLINK="#800080" BACKGROUND="cfg2html_back.jpg">
+<H1><CENTER><FONT COLOR=blue>
+$HOSTNAME - System Documentation
+</FONT></CENTER></H1>
+<FONT COLOR=blue><small>Created "$DATEFULL" with " $VERSION "</font></center></B><br>
+$UNAMEA
+</small>
+
+<HR><H1>Contents\n</font></H1>\n\
+" >$HTML_OUTFILE
+echo "		" $SYSTEM > $TEXT_OUTFILE
+echo "		" > $ERROR_LOG
+echo  "\n" >> $TEXT_OUTFILE
+echo  "\n" > $TEXT_OUTFILE_TEMP
+}
+
+######################################################################
+#  Increases the headling level
+######################################################################
+
+inc_heading_level() {
+HEADL=`echo "$HEADL+1"|bc`
+	echo_e "<UL type='square'>\n" >> $HTML_OUTFILE
+}
+
+######################################################################
+#  Decreases the heading level
+######################################################################
+
+dec_heading_level() {
+HEADL=`echo "$HEADL-1"|bc`
+echo "</UL>" >> $HTML_OUTFILE
+}
+
+######################################################################
+#  Adds text to output files
+######################################################################
+AddText() {
+
+        echo "<p>$*</p>" >> $HTML_OUTFILE_TEMP
+        echo_e "$*\n" >> $TEXT_OUTFILE_TEMP
+}
+
+######################################################################
+#  Creates an own paragraph, $1 = heading
+######################################################################
+
+paragraph() {
+HEADL=1
+if [ "$HEADL" -eq 1 ] ; then
+    echo  "<HR>" >> $HTML_OUTFILE_TEMP
+fi
+
+echo "<A NAME=\"$1\"></A>" >> $HTML_OUTFILE_TEMP
+echo "<A HREF=\"#Inhalt-$1\"><H${HEADL}><IMG SRC="profbull.gif" BORDER=0 WIDTH=14 HEIGHT=14> $1 </H${HEADL}></A><P>" >> $HTML_OUTFILE_TEMP
+
+
+echo "<IMG SRC="profbull.gif" WIDTH=14 HEIGHT=14>" >> $HTML_OUTFILE
+echo "<A NAME=\"Inhalt-$1\"></A><A HREF=\"#$1\">$1</A>" >> $HTML_OUTFILE
+echo_e "\nCollecting: " $1 "\n"
+echo "    $1" >> $TEXT_OUTFILE
+}
+
+######################################################################
+#  Creates an own paragraph, $1 = heading
+######################################################################
+close_html() {
+
+  echo_e "\n<hr>\n" >> $HTML_OUTFILE
+  echo_e "</P><P>\n<hr><FONT COLOR=blue><small>Created "$DATEFULL" with " $VERSION " (c) 1998-2009 by "  >> $HTML_OUTFILE_TEMP
+  echo "<A HREF=\"mailto:cfg2html2&#64;&#104;&#111;&#116;&#109;&#97;&#105;&#108;&#46;&#99;&#111;&#109?subject=$VERSION_\">Chris Ryan</A></small></P></font>" >> $HTML_OUTFILE_TEMP
+  cat $HTML_OUTFILE_TEMP >>$HTML_OUTFILE
+  cat $TEXT_OUTFILE_TEMP >> $TEXT_OUTFILE
+  rm $HTML_OUTFILE_TEMP $TEXT_OUTFILE_TEMP
+  echo_e "\n\nCreated "$DATEFULL" with " $VERSION " (c) 1998-2009 by Chris Ryan\n" >> $TEXT_OUTFILE
+}
+
+#*******************************************
+#*******  START MAIN SCRIPT HERE  **********
+#*******************************************
+
+testUser
+GetOpts
+InitVars
+LoadSystemVariables
+open_html
+. $CFGFILE
+close_html

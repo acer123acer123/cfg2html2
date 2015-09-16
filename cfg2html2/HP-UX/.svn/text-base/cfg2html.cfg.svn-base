@@ -1,0 +1,328 @@
+## We are going to run an HP-UX specific test. If this test fails then we
+## will exit the script
+. $SCRIPTBASE/hp_ux_test_osrev
+## RC will be set to 7 if the test failed.
+[ "$RC"x = "7x" ] && exit 1
+
+new_category "HP-UX/System"
+exec_command ". /usr/local/ct/cfg2html2/HP-UX/model_info" "HIDE"
+exec_command "/usr/bin/getconf MACHINE_SERIAL" "Serial_Number"
+
+exec_command contact_information "Support Contact"
+exec_command "locale" "Locale"
+exec_command "cat /etc/PATH | tr ':' '\n'" "/etc/PATH"
+exec_command "cat /etc/MANPATH | tr ':' '\n'" "/etc/MANPATH"
+exec_command "ulimit -aS" "Soft User limits"  
+exec_command "ulimit -aH" "Hard User limits"
+AddText "Hint: See http://www.faqs.org/faqs/hp/hpux-faq/section-144.html \
+	for details about ulimit"
+exec_command "uptime;sar 1 9" "Uptime, Load and SAR"
+exec_command " . /usr/local/ct/cfg2html2/HP-UX/process_info" "HIDE"
+exec_command "sar -b 1 9" "Buffer Activity"
+exec_command "vmstat -dnS;vmstat -f" "VM-Statistics"
+[ -r /var/adm/shutdownlog ] && \
+	(exec_command "tail /var/adm/shutdownlog" "Reboots")
+exec_command "crontab_collect.sh" "Crontab and AT scheduler"
+exec_command "cat /etc/inittab" "inittab"
+exec_command " grep -v ^# /etc/rc.config.d/* | grep '=[/0-9]'" "Runlevel Settings"
+exec_command "getpwd.hppa" "User accounts"
+exec_command "getpwd.hppa -g" "User accounts"
+
+new_category "Hardware"
+exec_command "ioscan -fnk; echo; ioscan -fk" "Hardware with H/W-Path"
+exec_command "ioscan_info" "I/O Scan Information"
+exec_command "head -l -n 1200 /var/adm/syslog/syslog.log|grep Physical| \
+	grep avail|cut -c 35-|dos2ux" "Physical Memory"
+[ -r /dev/crt ] && exec_command "/usr/bin/graphinfo" "Graphic Hardware"
+[ -r /etc/kbdlang ] && exec_command "cat /etc/kbdlang;echo" \
+	"Console Keyboard Layout"
+exec_command " . /usr/local/ct/cfg2html2/HP-UX/hardware_diag" "HIDE"
+exec_command "/usr/contrib/bin/machinfo" "Additional CPU Information"
+exec_command "/usr/bin/mpsched -s " "Local Hardware Domains"
+exec_command "dos2ux /var/tombstones/ts99" "Last PDCINFO Tombstone"
+exec_command "dos2ux /var/tombstones/ts98" "Previous PDCINFO Tombstone"
+exec_command "grep -e 'Event data from monitor' \
+	-e 'Event Time.' -e 'Severity.' -e 'Monitor.............: ' \
+	-e 'Event #.' /var/opt/resmon/log/event.log \
+	| dos2ux | grep -v Version | tail -35" "EMS Event Log"
+exec_command " . /usr/local/ct/cfg2html2/HP-UX/hardware_predictive" "HIDE"
+exec_command " . /usr/local/ct/cfg2html2/HP-UX/hardware_cim" "HIDE"
+exec_command "/opt/resmon/bin/resls /" "EMS Hardware Monitors"
+exec_command "/etc/opt/resmon/lbin/moncheck" "EMS Hardware Monitor Setup"
+exec_command "/etc/opt/resmon/lbin/set_fixed -Lv" "EMS Down States"
+exec_command "/opt/wbem/bin/cimprovider -ls" \
+	"CIM Providers: Module Status"
+exec_command "/opt/sfm/bin/sfmconfig -w -q" \
+	"Current SFM Diagnostics Mode"
+exec_command " . /usr/local/ct/cfg2html2/HP-UX/hardware_icap" "HIDE"
+exec_command "/usr/sbin/icapmanage -sv" "GiCAP Status"
+exec_command "firmware_collect.sh " \
+	"Disk Firmware Collect with Hardware Path"
+exec_command "get_diskfirmware.sh " \
+	"Disk Firmware Collect with Device Files"
+exec_command "get_emcluns.sh" \
+	"EMC Diskarray Configuration"
+exec_command "/sbin/powermt display dev=all" "EMC Power Path"
+exec_command " . /usr/local/ct/cfg2html2/HP-UX/hardware_xpinfo" "HIDE"
+exec_command "/opt/hparray/bin/arraydsp -i 2>/dev/null" "HP SureStore 12 AutoRAID"
+exec_command "/opt/hparray/bin/amdsp -i 2>/dev/null" "HP SureStore FC60 Disk Array"
+exec_command "get_sasinfo.sh " "Serial Attached \
+	SCSI (SAS) Mass Storage"
+exec_command "get_mptinfo.sh" "Ultra320  \
+	SCSI Controller/MPT Driver"
+exec_command ". /usr/local/ct/cfg2html2/HP-UX/hardware_va" "HIDE"
+exec_command "/sbin/irdisplay" "Internal RAID"
+exec_command "/sbin/spmgr display" "SecurePath Information"
+exec_command "/sbin/spmgr display|grep -i active|sort" "SecurePath Active Paths"
+exec_command "/sbin/spmgr display|grep c | grep t | grep d| \
+	 grep '-' | grep -v Auto" "SecurePath Devicefiles and UUID"
+exec_command ". /usr/local/ct/cfg2html2/HP-UX/hardware_olrad" "HIDE"
+
+new_category "Cellboard Information/Hardpartition Information"
+exec_command ". /usr/local/ct/cfg2html2/HP-UX/cellboard" "HIDE"
+
+new_category "Virtual Partition Information (vPar)"
+AddText "Hint: "'vpar_status -w'"!"
+exec_command "swlist vParManager VirtualPartition|tail +6" "vPar Software Version"
+exec_command "get_vparinfo.sh" "vPar Configuration (`model|cut -f3 -d'/'`)" 
+exec_command "/usr/sbin/vparenv" "vPar Environment (vPar/nPar)"
+exec_command "what /stand/vpmon | fmt " "vPar Monitor - Patch Level" 
+
+##We will check for HPVM before creating a new category
+exec_command ". /usr/local/ct/cfg2html2/HP-UX/hpvm" "HIDE"
+
+new_category "Software"
+exec_command "/opt/swa/bin/swa report -x crl_check=false  -a SEC -a PCW -r detail \
+                -x html_report=/tmp/patch_report.html" "Missing OS Patches"
+exec_command "swlist -l depot 2>/dev/null|grep -v Initiali" \
+	"Registered Depots"
+exec_command "swlist|tail +6" "Installed Software"
+exec_command "swlist -a date -a title -a revision|tail +6" \
+	"Software Installation Date"
+exec_command "swjob | tail" "Last Software Jobs"
+exec_command "swlist -l product | tail +6|grep -v -e PHNE_ -e PHSS_ \
+	-e PHKL_ -e PHCO_" "Installed Products"
+exec_command "swlist -a state  -l fileset | \
+	 grep -v -e configured -e ^#" \
+	"Unconfigured/Corrupted Software"
+AddText "1.) Hint: man swverify, man swconfig to reconfigure \
+	corrupted software! swmodify -u PHxx_##### to remove \
+	patch references"
+AddText "2.) Hint: man check_patches (HP-UX 11.xx);; \
+	swlist -a state  -l fileset | grep -v -e configured \
+	-e ^# | awk '{print $1;}'|xargs swconfig"
+AddText "Gurus only: swlist -l fileset - state | \
+	grep installed | awk '{print $1;}'>/usr/local/ct/sw.tmp; \
+	swmodify -a state=configured -f /usr/local/ct/sw.tmp"
+AddText "These useful tools are not delivered with HP-UX core, \
+	but as a patch:
+	PHCO_20824 (or newer) for HP-UX 10.20 (cleanup command only)
+	PHCO_27779 (or newer) for HP-UX 11.00 (replaces PHCO_24347)
+	PHCO_27780 (or newer) for HP-UX 11.11 (replaces PHCO_24630)
+	Use cleanup under HP-UX 10.20 and cleanup -c 1 under 11.xx "
+exec_command "cat /var/adm/sw/needs_config" "Software that needs Reconfiguration"
+exec_command patch_stat "Patches and Patch Statistic"
+exec_command "cat /var/adm/sw/.codewords" "Installed Codewords" 
+
+new_category "Filesystems, Dump- and Swapconfiguration"
+exec_command "bdf -i" "Filesystems and Usage"
+AddText "Hint: VxFS has unlimited Inodes, \
+	ninode limit is only valid for HFS file systems!"
+exec_command "df -g" "Filesystem Settings"
+exec_command "cat /etc/fstab|grep -v '^#'" "Mountpoint (fstab)"
+AddText "Hint: Available filesystem types: $(fstyp -l|fmt)"
+exec_command "mount -lp" "Active Local Mountpoints"
+AddText "Hint: /sbin/vxtunefs mount_point to get JFS parameters"
+exec_command "cat /etc/vx/tunefstab" "JFS/VXFS tuneable parameters"
+exec_command "cat /etc/exports|grep -v '^#'" "NFS Filesystems"
+exec_command "swapinfo -tam" "Swap Info"
+exec_command "/sbin/crashconf" "Dump Configuration"
+exec_command "cat /var/adm/sbtab" "HFS Superblocks"
+
+new_category "LVM"
+exec_command ". /usr/local/ct/cfg2html2/HP-UX/lvm" "HIDE"
+
+new_category "Network Settings/Network Interface Cards"
+exec_command "get_lan_desc.sh" "NIC Description"
+exec_command "qlan.sh" "NIC Overview"
+exec_command "qlan.sh -v" "NIC Details"
+exec_command "grep -v ^# /etc/rc.config.d/netconf|grep -v ^\$" \
+	"Netconf Settings"
+exec_command "(grep -v -e ^# -e ^$ /etc/rc.config.d/hp_apa*conf); \
+	echo LanScan -q:;lanscan -q" "Autoport Aggregation"
+exec_command "what /usr/conf/lib/liblan.a" \
+	"LAN Core Patch Level"
+exec_command "netstat -r;echo;netstat -rnv" "Routing Tables"
+exec_command "netstat -gin;echo;netstat -s;echo;netstat -Ms" \
+	"TCP/IP Stack and Protocol Statistics"
+exec_command "netstat -an | grep tcp | awk '{print \$6}' | \
+	sort | uniq -c" \
+	"Number of TCP/IP Sockets in the same State"
+
+new_category "Network Subsystems"
+exec_command "cat /etc/gated.conf|grep -v ^#" "Gate Daemon Settings"
+exec_command "what /usr/lbin/*pd" "Networking Daemon Patchlevel"
+exec_command "cat /etc/bootptab|grep -v -E '^#'" "BOOTP Daemon Configuration"
+exec_command "cat /var/adm/inetd.sec|grep -v -E '^#'" \
+	"Internet Daemon Security"
+exec_command "ll /usr/lib/security" \
+	"Files in /usr/lib/security (PAM Kerberos)"
+exec_command "cat /etc/pam.conf|grep -v ^#" "PAM Configuration"
+exec_command "cat /etc/krb5.conf|grep -v ^#" "Kerberos 5 Configuration"
+exec_command "cat /etc/krb5.keytab |grep -v ^#" \
+	"Kerberos 5 Keytab Configuration"
+exec_command "cat /etc/services" "Internet Daemon Services"
+exec_command "cat /etc/resolv.conf;echo; ( [ -f /etc/nsswitch.conf ] \
+	&& cat /etc/nsswitch.conf)" "DNS and Names"
+exec_command "cat /etc/named.boot|grep -v '^;'"  "DNS/Named"
+exec_command "(what /usr/sbin/sendmail|grep -i version); \
+	grep ^DZ /etc/mail/sendmail.cf /usr/newconfig/etc/mail/sendmail.cf" \
+	"Sendmail Versions"
+exec_command "echo \$Z|/usr/sbin/sendmail -bt -d" "Detailed Sendmail Configuration"
+exec_command "praliases" "Sendmail Aliases local"
+(ypwhich 2>/dev/null>/dev/null) && \
+	(grep aliases /etc/nsswitch.conf>/dev/null) && \
+	exec_command "ypcat -k mail.aliases" \
+	"Sendmail Aliases NIS/YP"	
+exec_command "grep -v -e ^# -e ^$ /etc/rc.config.d/nfsconf" "NFS Settings"
+exec_command "ps -ef|grep -e nfsd -e biod | grep -v grep" \
+	"NFSD and BIOD utilisation"
+exec_command "rpcinfo -u 127.0.0.1 100003" "NSFD responds to RPC requests"
+exec_command "showmount -a" "Mounted NFS File Systems"
+exec_command "cat /etc/auto_master" "NFS Automounter Settings"
+exec_command "cat /etc/auto.direct" "NFS Automounter MAPS"
+exec_command "nfsstat;echo ;nfsstat -m;echo;netstat -an| \
+	grep -e Proto -e 2049" "NFS Statistics"
+exec_command "rpcinfo -p " "RPC"
+exec_command "ipcs -mob" "IPC Status"
+(ypwhich 2>/dev/null>/dev/null) && \
+	(exec_command "what /usr/lib/netsvc/yp/yp*; ypwhich" "NIS/Yellow Pages")
+exec_command "ntpq -p" "XNTP Time Protocol Daemon"
+[ -x /opt/ifor/ls/bin/i4lbfind ] && \
+	exec_command "/opt/ifor/ls/bin/i4lbfind -q" \
+	"GLB Server Daemons"
+cat_file "/etc/shells" "FTP Login Shells"
+[ -r /etc/SnmpAgent.d/snmpd.conf ] && \
+	(exec_command "grep -v ^# /etc/SnmpAgent.d/snmpd.conf" \
+	"Simple Network Management Protocol (SNMP)")
+exec_command ". /usr/local/ct/cfg2html2/HP-UX/network_dtc" "HIDE"
+[ -r /etc/ddfa/dp ] && exec_command "grep -v ^# /etc/ddfa/dp" \
+	"DDFA Dedicated Ports"
+HF=$(what /stand/vmunix | grep HyperFabric)
+[ -n "$HF" ] && exec_command "echo $HF\n;/opt/clic/bin/clic_stat -S" \
+	"HyperFabric Version"
+
+## Test for and then collect Fibre Channel information
+exec_command ". /usr/local/ct/cfg2html2/HP-UX/fibre_info" "HIDE"
+
+new_category "Kernel"
+exec_command "dmesg | tail -150" "Last 150 lines of dmesg(1m)"
+exec_command "vmstat -s" "Kernel paging events"
+exec_command "sar -v 1 5" "Status Kernel Processes"
+exec_command "cat /stand/system|grep -v -E \"^\*\"|pr -2t" \
+	"Kernel Parameter from /stand/system"
+exec_command "/usr/sbin/sysdef" "Current Kernel Parameters"
+exec_command "/usr/sbin/kctune -g" "All kctune(1) System Parameter"
+exec_command "/usr/sbin/kctune -Sg" "Nonstandard kctune(1) System Parameter"
+exec_command "/usr/sbin/kmtune" "kmtune(1) System Parameter"
+exec_command "/usr/sbin/kmsystem" "Kernel Module Configuration"
+exec_command "/usr/sbin/kconfig" "Available Kernel Configuration"
+exec_command "/usr/sbin/lsdev" "Current Device Drivers"
+exec_command "what /usr/conf/lib/libhp-ux.a" \
+	"HP-UX Core Patch Level"
+exec_command "what /usr/lib/hpux??/aries??.so" \
+	"ARIES Emulator Patch Level"
+exec_command "grep -v ^# /etc/syslog.conf" "Syslogd Facility Configuration"
+
+new_category "System Enhancements"
+exec_command "/usr/bin/dcnodes -Slh" "Diskless Cluster Nodes"
+exec_command "what /usr/sbin/sam;what /usr/sam/lib/C/sam.ui" \
+	"SAM version"
+exec_command "what /usr/sbin/update-ux" "update-ux Version"
+exec_command "what /opt/ssh/sbin/sshd" "SSH" 
+[ -x /usr/contrib/bin/X11/xdpyinfo ] && \
+	[ -n "$DISPLAY" ] &&  \
+	exec_command "/usr/contrib/bin/X11/xdpyinfo" "X11"
+[ -x /usr/contrib/bin/X11/fsinfo ] && \
+	[ -n "$FONTSERVER" ] && \
+	exec_command "/usr/contrib/bin/X11/fsinfo" "Font-Server"	
+exec_command "getprivgrp" "Special Group Attributes"
+exec_command "ll /dev/async; lssf /dev/async" "async Device Driver"
+exec_command "/usr/bin/x25stat" "x25stat"
+exec_command "/usr/bin/x25stat -c" "x25stat -c"
+exec_command "/usr/bin/x25stat -a" "x25stat -a"
+exec_command "/usr/bin/what /usr/lib/sna/sdlc.??? /usr/lib/sna/download" \
+	"SNA Version"
+exec_command "/bin/cat /usr/lib/sna/sna.ini" "SNA Init Settings"
+exec_command "/usr/bin/snapkinfo" "SNA KInfo"
+exec_command "/usr/bin/snapshownet -d" "SNA Network"
+
+new_category "Applications and Subsystems"
+exec_command "ls -lisa /usr/local/bin" "Files in /usr/local/bin"
+exec_command "ls -lisa /usr/lbin" "Files in /usr/lbin"
+exec_command ". /usr/local/ct/cfg2html2/HP-UX/app_ifor" "HIDE"
+exec_command "/opt/CoCreate/mels/mels -t" "ME10 Lisence Server"
+exec_command perf_tools "Installed Performance Software"
+exec_command "/opt/ignite/bin/print_manifest 2>/dev/null" "Ignite/UX - Print_Manifest"
+exec_command "what /opt/wt/bin/SharedX" "SharedX/MPower Web"
+exec_command "what /opt/SharedX/bin/SharedX" \
+	"SharedX/Old Version"
+exec_command "cat /etc/opt/socks/sockd.conf" "SOCKS: sockd Configuration"
+exec_command "cat /etc/opt/socks/socks.conf" "SOCKS: socks Configuration"
+exec_command ". /usr/local/ct/cfg2html2/HP-UX/app_ignite" "HIDE"
+exec_command "grep -v -E '^#|^$' /etc/casqit.ini" "CASQ-it Configuration"
+exec_command SCM_collector "Service Control Manager"
+SWAT=`grep swat /etc/services /etc/inetd.conf`
+[ -n "$SWAT" ] && exec_command  "echo $SWAT" "Samba: SWAT-Port"
+exec_command "/opt/samba/bin/findsmb" "Samba Neighbourhood"
+exec_command "/opt/samba/bin/smbstatus 2>/dev/null" "Samba (smbstatus)"
+exec_command "/opt/samba/bin/testparm -s" "Samba Configuration"
+exec_command "/opt/samba/bin.org/testparm -s" "Samba Configuration (bin.org)"
+exec_command "ps -ef | grep -e swat -e smb -e nmb| \
+	grep -v grep" "Samba Daemons"
+exec_command "/opt/OV/bin/OpC/opcagt -status -version2>&1" \
+	"HP OpenView Operations Agent Status"
+exec_command "/opt/OV/bin/OpC/install/opclic -list" \
+	"HP OpenView IT/Operations license"
+exec_command "/opt/OV/bin/ovstatus -c" "Network Node Manager/ITO"
+exec_command "/opt/OV/bin/OpC/opctemplate -l" "ITO Enterprise Templates"
+exec_command "/opt/OV/bin/ovobjprint -S" "Contents of OVW Database"
+exec_command "/opt/OV/bin/OpC/utils/opcsystst -ro" "ITO Client Settings"
+exec_command "cat /etc/prmconf; prmlist 2>&1 " \
+	"PRM - Resource Process Manager"
+exec_command "cat /usr/openv/netbackup/exclude_list" "Veritas Netbackup \
+	exclude_list"
+exec_command "cat /usr/openv/netbackup/include_list" "Veritas Netbackup \
+	include_list"
+exec_command "getlp.sh" "Printer Spooler and Printers"
+exec_command "lpana" "Printer Statistics"
+exec_command ". /usr/local/ct/cfg2html2/HP-UX/app_jetdirect" "HIDE"
+
+new_category "Veritas Licenses/Veritas Volume Manager (VxVM)"
+exec_command "/sbin/vxlicense -p" "Licenses"
+exec_command "vxdisk list" "VxVM Disk Overview"
+exec_command "\
+	echo $(vxdg list |sed 1d| awk '{print $1} END {print NR }') \
+	diskgroups in total| adjust" \
+	"VxVM DiskGroup Overview"
+exec_command "VxVM_collect.sh" "VxVM Collector"
+exec_command ". /usr/local/ct/cfg2html2/HP-UX/veritas_log" "HIDE"
+
+# Create a DataProtector section?
+exec_command ". /usr/local/ct/cfg2html2/HP-UX/ob_dataprotector" "HIDE"
+
+# Database sections
+exec_command ". /usr/local/ct/cfg2html2/HP-UX/database" "HIDE"
+
+# ServiceGuard
+exec_command ". /usr/local/ct/cfg2html2/HP-UX/serviceguard" "HIDE"
+
+new_category "OpenText/IXOS LEA"
+exec_command "cat /usr/ixos-archive/patch/version.txt" \
+	"Installed and patched Software"
+exec_command "ixostool.sh env|grep -E 'ORA|ixos|IXOS|NLS|TNA'" \
+	"Environmental Settings"
+exec_command "/usr/ixos-archive/bin/ixutils.ksh -printprodlist" \
+	"Installed Software"
+exec_command "ixostool.sh spawncmd status" "IXOS Spawner Demon Status"
+exec_command "ixostool.sh dbtest" "Database test results"

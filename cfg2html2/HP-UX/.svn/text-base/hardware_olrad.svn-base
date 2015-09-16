@@ -1,0 +1,10 @@
+if [ -x /usr/bin/olrad ] 
+then
+   exec_command "olrad -q" "OLA/R Status (`olrad -n` Slots)"
+   exec_command "ll /usr/sbin/olrad.d" "OLRAD Scripts"
+else            ## obsolete!! ##
+  exec_command "rad -q" "OLA/R Status (`rad -n` Slots)"
+  exec_command "ll /usr/sbin/olrad.d" "OLRAD Scripts"
+fi
+
+

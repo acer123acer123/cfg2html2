@@ -1,0 +1,16 @@
+if [ -x /opt/fcms/bin/fcmsutil ] ; then
+  new_category "Fibre Channel" "Fibre Channel Components"
+  [ -f /usr/conf/lib/libfcms.a ] && exec_command \
+	"what /usr/conf/lib/libfcms.a" "Fibre Channel Driver"
+  ([ -c /dev/fcms* ] || [ -c /dev/td* ]) && \
+	exec_command get_fcold.sh \
+	"(Fibre Channel Card Statistics (old Adapter)"
+
+  if [ `ls /dev/td* /dev/fcd*  /dev/fcms* 2>/dev/null | wc -l` != 0 ]
+  then
+    exec_command get_fc.sh "Fibrechannel Interface Information" 
+  fi
+  exec_command "what /opt/fcms/bin/fcmsutil" "FCMS Util Revision"
+  exec_command "/opt/fcms/bin/tdlist" "Detailed TD List"
+fi
+

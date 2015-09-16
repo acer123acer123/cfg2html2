@@ -1,0 +1,15 @@
+if  [ -x /usr/sbin/icapstatus ]
+then
+  /usr/sbin/icapstatus -z
+  if [[ $? = 4 ]]
+  then
+    AddText "Note: iCAP is not supported on this system!"
+  else
+    exec_command /usr/sbin/icapstatus "iCAP"
+  fi
+else
+  if [ -x /usr/sbin/icod_stat ]
+  then
+    exec_command /usr/sbin/icod_stat "iCOD/iCAP"
+  fi
+fi

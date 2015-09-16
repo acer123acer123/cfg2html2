@@ -1,0 +1,14 @@
+if [ -e /sbin/multipath ]
+then
+ new_category "Multipath Configuration"
+ exec_command "rpm -qa | grep multipath" "Multipath Package Version"
+ exec_command "chkconfig --list multipathd" "Multipath Service Status"
+ exec_command "/sbin/multipath -v2 -d -ll" "Multipath Devices Basic Information"
+ exec_command "/sbin/multipath -v3 -d -ll" "Multipath Devices Detailed Information"
+ exec_command "grep -vE '^#|^ *$' /etc/multipath.conf" "Multipath Configuration File"
+ exec_command "/var/lib/multipath/bindings" "Multipath Bindings"
+ for MultiPath in $(/sbin/multipath -v1 -d -l)
+ do 
+   ls -l /dev/mapper/${MultiPath}
+ done
+fi

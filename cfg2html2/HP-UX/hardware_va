@@ -1,0 +1,15 @@
+if [ -x /opt/sanmgr/commandview/client/sbin/armdsp ]
+then
+  VAID=$(armdsp -i | sort -u | grep ^Serial|cut -f2 -d":")
+
+  for i in $VAID
+  do
+     exec_command "armdsp -a -r $i" "VA Configuration ($i)"
+     exec_command "armfeature -r $i" "VA Installed Features ($i)"
+  done
+
+  exec_command "armtopology" "VA Topology"
+  AddText "Note: If you need more detailed VA7x00 logs execute getVAlogs.sh"
+
+fi  # va collect, 26.02.02, rar
+

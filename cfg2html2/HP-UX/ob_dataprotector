@@ -1,0 +1,70 @@
+## OB (DataProtector) ############################################################
+if [ -f /opt/omni/lbin/dbsm ] 
+then
+ new_category "DataProtector Cell Server Configuration"
+ if [ -f /opt/omni/lbin/dbsm ] ; then
+
+   exec_command "/opt/omni/bin/omnicc -version;/opt/omni/sbin/omnisv -version" \
+	"DataProtector Version (CC/SV)"
+   exec_command "/opt/omni/sbin/omnisv -status" "DataProtector Status"
+   exec_command "/opt/omni/bin/omnicc -query"  "DataProtector Cell Server License"
+   exec_command "/opt/omni/bin/omnicheck -patches; \
+	/opt/omni/bin/omnicheck -patches -host client" "Installed DP Patches"
+
+  [ -r /etc/opt/omni/cell/lic.dat ] && exec_command \
+        "(grep -v ^# /etc/opt/omni/cell/lic.dat); \
+        echo; /opt/omni/bin/omnicc -password_info" \
+		"License File and License Keys"
+  [ -r /var/opt/ifor/nodelock ] && exec_command \
+        "cat /var/opt/ifor/nodelock" "Old 2.x Nodelock License Key" 
+  [ -r /etc/opt/omni/options/global ] && \
+	exec_command "grep -v -e ^# -e ^\$ /etc/opt/omni/options/global" \
+	"Nonstandard Global Options"
+  exec_command "/opt/omni/bin/omnicellinfo -dev -detail"  "Configured Devices"
+  exec_command "/opt/omni/bin/omnicellinfo -mm"     "Configured Media Pools"
+  exec_command "/opt/omni/bin/omnicellinfo -dlinfo"   \
+	"Configured Data- and Barlists"
+  exec_command "/opt/omni/bin/omnicellinfo -schinfo"   \
+	"Data- and Barlists Scheduling"
+  exec_command "/opt/omni/bin/omnidb -object"            \
+	"List of all DataProtector Objects"
+  exec_command "/opt/omni/bin/omnidb -session -last 30"  \
+	"Session Status of the last 30 Days"
+  exec_command "/opt/omni/sbin/omnidbutil -info"   \
+	"DataProtector Database Usage"
+  exec_command "/opt/omni/sbin/omnidbutil -extendinfo"  \
+	"DataProtector Database Extend Usage"
+
+  AddText "Hint:  cat /var/opt/omni/log/inet.log | \
+	awk '{print $6;}'| sort -u | grep @ # INet DP users"
+
+  fi
+
+ # first try to spot DataProtector crashes reported by Stefan Gehring
+ if [ -x /opt/omni/lbin/bma ]
+ then
+
+   ob_lbin_version () {
+   for i in /opt/omni/lbin/?ma /opt/omni/lbin/??da      # a = agent!
+   do
+     [ -x $i ] && $i -version | head -1   
+   done
+   echo "\nPatch level:"
+   cat /opt/omni/.patch_* | sort
+   }
+ 
+   exec_command ob_lbin_version "DataProtector Agent Versions and Patch Level"
+ fi
+
+ [ -r /opt/omni/.omnirc ] && exec_command "grep -v ^# /opt/omni/.omnirc" \
+	"Local Data Protector Client Setting"  
+
+ ob_instanzen () {
+
+   cat /etc/opt/omni/cell/omni_info
+ }
+ if [ -r /etc/opt/omni/cell/cell_server ] ; then
+   exec_command "cat /etc/opt/omni/cell/cell_server" "DataProtector II Cell Server"
+   exec_command ob_instanzen "Installed DataProtector Instances"
+ fi
+fi

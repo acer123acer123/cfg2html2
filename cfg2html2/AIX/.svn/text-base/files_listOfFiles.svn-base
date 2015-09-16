@@ -1,0 +1,119 @@
+files ()
+{
+     ls /etc/aliases         2>/dev/null
+     ls /etc/binld.cnf       2>/dev/null
+     ls /etc/bootptab        2>/dev/null
+     ls /etc/dhcpcd.ini      2>/dev/null
+     ls /etc/dhcprd.cnf      2>/dev/null
+     ls /etc/dhcpsd.cnf      2>/dev/null
+     ls /etc/dlpi.conf       2>/dev/null
+     ls /etc/environment     2>/dev/null
+     ls /etc/ftpusers        2>/dev/null
+     ls /etc/gated.conf      2>/dev/null
+     ls /etc/hostmibd.conf   2>/dev/null
+     ls /etc/hosts           2>/dev/null
+     ls /etc/hosts.equiv     2>/dev/null
+     ls /etc/hosts.lpd       2>/dev/null
+     ls /etc/inetd.conf      2>/dev/null
+     ls /etc/inittab         2>/dev/null
+     ls /etc/mib.defs        2>/dev/null
+     ls /etc/mrouted.conf    2>/dev/null
+     ls /etc/netgroup        2>/dev/null
+     ls /etc/netsvc.conf     2>/dev/null
+     ls /etc/ntp.conf        2>/dev/null
+     ls /etc/oratab          2>/dev/null
+     ls /etc/policyd.conf    2>/dev/null
+     ls /etc/protocols       2>/dev/null
+     ls /etc/pse.conf        2>/dev/null
+     ls /etc/pse_tune.conf   2>/dev/null
+     ls /etc/pxed.cnf        2>/dev/null
+     ls /etc/qconfig         2>/dev/null  # defined printers
+     ls /etc/filesystems     2>/dev/null
+     ls /etc/rc              2>/dev/null
+     ls /etc/rc.adtranz      2>/dev/null
+     ls /etc/rc.bsdnet       2>/dev/null
+     ls /etc/rc.licstart     2>/dev/null
+     ls /etc/rc.net          2>/dev/null
+     ls /etc/rc.net.serial   2>/dev/null
+     ls /etc/rc.oracle       2>/dev/null
+     ls /etc/rc.qos          2>/dev/null
+     ls /etc/rc.shutdown     2>/dev/null
+     ls /etc/rc.tcpip        2>/dev/null
+     ls /etc/resolv.conf     2>/dev/null
+     ls /etc/rsvpd.conf      2>/dev/null
+     ls /etc/sendmail.cf     2>/dev/null
+     ls /etc/security/limits 2>/dev/null 
+     ls /etc/services        2>/dev/null
+     ls /etc/slip.hosts      2>/dev/null
+     ls /etc/snmpd.conf      2>/dev/null
+     ls /etc/snmpd.peers     2>/dev/null
+     ls /etc/syslog.conf     2>/dev/null
+     ls /etc/ssh/sshd_config 2>/dev/null 
+     ls /etc/telnet.conf     2>/dev/null
+     ls /etc/dlpi.conf       2>/dev/null
+     ls /etc/environment     2>/dev/null
+     ls /etc/ftpusers        2>/dev/null
+     ls /etc/gated.conf      2>/dev/null
+     ls /etc/hostmibd.conf   2>/dev/null
+     ls /etc/hosts           2>/dev/null
+     ls /etc/hosts.equiv     2>/dev/null
+     ls /etc/hosts.lpd       2>/dev/null
+     ls /etc/inetd.conf      2>/dev/null
+     ls /etc/inittab         2>/dev/null
+     ls /etc/mib.defs        2>/dev/null
+     ls /etc/mrouted.conf    2>/dev/null
+     ls /etc/netgroup        2>/dev/null
+     ls /etc/netsvc.conf     2>/dev/null
+     ls /etc/ntp.conf        2>/dev/null
+     ls /etc/oratab          2>/dev/null
+     ls /etc/policyd.conf    2>/dev/null
+     ls /etc/protocols       2>/dev/null
+     ls /etc/pse.conf        2>/dev/null
+     ls /etc/pse_tune.conf   2>/dev/null
+     ls /etc/pxed.cnf        2>/dev/null
+     ls /etc/qconfig         2>/dev/null  # defined printers
+     ls /etc/filesystems     2>/dev/null
+     ls /etc/rc              2>/dev/null
+     ls /etc/rc.adtranz      2>/dev/null
+     ls /etc/rc.bsdnet       2>/dev/null
+     ls /etc/rc.licstart     2>/dev/null
+     ls /etc/rc.net          2>/dev/null
+     ls /etc/rc.net.serial   2>/dev/null
+     ls /etc/rc.oracle       2>/dev/null
+     ls /etc/rc.qos          2>/dev/null
+     ls /etc/rc.shutdown     2>/dev/null
+     ls /etc/rc.tcpip        2>/dev/null
+     ls /etc/resolv.conf     2>/dev/null
+     ls /etc/rsvpd.conf      2>/dev/null
+     ls /etc/sendmail.cf     2>/dev/null
+     ls /etc/security/limits 2>/dev/null  
+     ls /etc/services        2>/dev/null
+     ls /etc/slip.hosts      2>/dev/null
+     ls /etc/snmpd.conf      2>/dev/null
+     ls /etc/snmpd.peers     2>/dev/null
+     ls /etc/syslog.conf     2>/dev/null
+     ls /etc/ssh/sshd_config 2>/dev/null 
+     ls /etc/telnet.conf     2>/dev/null
+     ls /etc/xtiso.conf      2>/dev/null
+     ls /opt/ls3/ls3.sh      2>/dev/null
+     ls /usr/tivoli/tsm/client/ba/bin/rc.dsmsched 2>/dev/null
+     ls /usr/tivoli/tsm/server/bin/rc.adsmserv    2>/dev/null
+     ls /usr/tivoli/tsm/client/ba/bin/dsm*.sys  2>/dev/null 
+     ls /usr/tivoli/tsm/client/ba/bin/dsm*.opt  2>/dev/null 
+     ls /usr/tivoli/tsm/client/ba/bin64/dsm*.sys  2>/dev/null
+     ls /usr/tivoli/tsm/client/ba/bin64/dsm*.opt  2>/dev/null
+     grep -i inclexcl /usr/tivoli/tsm/client/ba/bin/dsm.sys |awk '{print $2}'| \
+	while read inc
+        do
+          ls $inc
+        done
+  }
+
+
+COUNT=1 
+for FILE in $(files)
+do
+  exec_command "egrep -v '^#|^[       ]*$' ${FILE} | uniq" "${FILE}"  
+  COUNT=$(expr $COUNT + 1)
+done
+

@@ -1,0 +1,11 @@
+if [ -x /var/ifor/i4cfg ]
+then
+  /var/ifor/i4cfg -list | grep -q 'active'
+  rc=$?
+  if (( $rc == 0 ))
+  then
+     exec_command "/var/ifor/i4blt -ll -n $(uname -n)" "Installed Floating Licenses"
+     exec_command "/var/ifor/i4blt -s -n $(uname -n)" "Status of Floating Licenses"
+  fi
+fi
+

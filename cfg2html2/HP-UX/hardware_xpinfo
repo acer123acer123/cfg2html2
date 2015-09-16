@@ -1,0 +1,33 @@
+XPINFO=xpinfo  # We can't look for it because of the return string when this
+		# binary is not found
+if [ -x $XPINFO ]
+then
+  XPINFOFILE="$OUTDIR/$BASENAME"_xpinfo.csv
+  $XPINFO -d";" | grep -v "Scanning" > $XPINFOFILE
+  AddText "The XP-Info configuration was additionally dumped as CSV \
+	format into the file <b>$XPINFOFILE</b> for further usage"
+  XPINFOFILE="$OUTDIR/$BASENAME"_xpinfo.txt
+  $XPINFO -i | grep -v "Scanning">$XPINFOFILE
+  AddText "The XP-Info configuration was additionally dumped \
+  as plain text format into the file <b>$XPINFOFILE</b> for further usage"
+  exec_command "$XPINFO -r|grep -v Scanning" "SureStore E Disk \
+	Array XP Disk Mechanisms"
+  exec_command "cat $XPINFOFILE" "SureStore E Disk Array XP \
+	Identification Information"
+  exec_command "$XPINFO -c|grep -v Scanning" \
+	"SureStore E Disk Array XP (Continuous Access and Business Copy)"
+  exec_command "find_non_lvm_luns.sh" "XP LUNs visible/not mapped"
+  AddText "This is a list of LUNs visible to this host, \
+	but not mapped using LVM"
+  AddText "Possible cause: Command Devices, no SecureManager \
+	usage or deleted LUNs, not deleted on the XP..."
+  exec_command "get_xpsum.sh $XPINFOFILE" \
+	"SureStore E Disk Array XP (Port Summary):"
+  exec_command "get_xpluns.sh $XPINFOFILE" \
+	"SureStore E Disk Array XP (LUNs Summary)"
+  AddText "Note: xpinfo version $($XPINFO -v) installed"
+else
+  exec_command "/usr/contrib/bin/inquiry256.ksh" \
+  "SureStore E Disk Array XP256 Mapping (inquiry/obsolete!!)"
+fi
+

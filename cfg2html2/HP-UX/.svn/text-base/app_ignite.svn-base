@@ -1,0 +1,39 @@
+ShowMakeRecovery () {
+
+  (cat /var/opt/ignite/logs/makrec.log1; echo Started) | \
+  awk '
+  ################ 21.06.99 by Ralph Roth #############
+  # determines the make_recovery sessions
+  # bug fixed by rar, 12.01.2000
+
+  /^Started/ {
+    if (ENDE != "")
+    {
+          printf("%33s / %s\n", START, ENDE);
+          ENDE = "";
+    }
+    if (START != "")
+    {
+       START = ""; ENDE = "";
+    }
+
+    START = $0; ENDE = "";
+  }
+    /^If the system/ { ENDE = "Cold installed via make_recovery"; }
+    /^Ended/   { ENDE = $0; }
+    /^Completed/ { ENDE = $0; }
+
+    {}
+    '
+ }
+
+if [ -r /var/opt/ignite/logs/makrec.log1 ]
+then
+  exec_command ShowMakeRecovery "Make_Recovery Sessions"
+  AddText "Warning: make_tape_recovery sessions are NOT \
+	collected in this log anymore"
+fi     
+
+[ -r /var/opt/ignite/local/recovery.log ] && \
+	exec_command "tail -50 /var/opt/ignite/local/recovery.log" "Ignite/UX Logs"
+

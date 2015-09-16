@@ -1,0 +1,24 @@
+# The variable includeNAinHTML should be set to yes or no.  
+# This variable determines if the command section (title, command, and output) 
+# will show up in the HTML output file when the command does not produce any
+# output. Examples of when this could happen include trying to run a command
+# that doesn't exist.
+#
+# It should be noted, however, that the output of the command will still show
+# up in the error file. 
+# 
+# Here is what the HTML output file would look like if
+# includeNAinHTML="yes"
+# and the following was in the configuration file:
+# exec_command "iDoNotExist.sh" "I am not a command"
+#
+# <begin html snippit>
+#
+# I am not a command
+# iDoNotExist.sh
+# n/a or not configured!
+#
+# <end html snippit>
+# 
+# Setting this variable to "no" will surpress these unnecessary messages.
+includeNAinHTML="no"

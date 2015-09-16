@@ -1,0 +1,23 @@
+if [ -e /proc/ide/hda/model ] 
+then 
+  echo -e -n "hda: "
+  cat /proc/ide/hda/model 
+fi
+
+if [ -e /proc/ide/hdb/model ] 
+then 
+  echo -e -n "hdb: "
+  cat /proc/ide/hdb/model 
+fi
+
+if [ -e /proc/ide/hdc/model ] 
+then 
+  echo -e -n "hdc: "
+  cat /proc/ide/hdc/model 
+fi
+
+if [ -e /proc/ide/hdd/model ] 
+then 
+  echo -e -n "hdd: "
+  cat /proc/ide/hdd/model 
+fi

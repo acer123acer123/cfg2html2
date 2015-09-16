@@ -1,0 +1,12 @@
+if [ -d /opt/ifor ]; then
+then
+  i4_collect()
+  {
+    echo 'Machine ID: \c';uname -i
+    /opt/ifor/ls/bin/i4target -v|grep ID|head -2
+  }
+        #### this is a fix for Thomas Brix inline screentips ####
+  iforver="iFOR ID number "`cat /opt/ifor/ls/VERSION.ARK`
+
+  [ -x /opt/ifor/ls/bin/i4target ] && exec_command i4_collect $iforver
+fi

@@ -1,0 +1,29 @@
+######### DTC16RX: added 03-May-2001 by Ralph Roth #############
+######### { changed/added 04.09.2003 (12:35) by Ralph Roth }
+
+    for dtc in /opt/dtcmgr/sbin/dtclist /opt/rdtcmgr/sbin/rdtclist
+    do
+
+    DtcInfo() {
+        liste_dtc=`$dtc -c`
+        echo "$dtc"|grep rdtc  > /dev/null
+        [ $? -eq 0 ]  && liste_dtc=`$dtc -d`
+
+        echo "List of DTCs\n" $liste_dtc
+        echo "\n"
+
+        for i in `echo $liste_dtc | cut -d" " -f 1`
+        do
+                echo "---=[ $i ]=----------------------------------------------------------"
+                $dtc -c $i | dos2ux | tr \x0c " "| grep -v ^$
+                echo "\n\nRDC Status\n"
+                [ -x /opt/rdtcmgr/sbin/rdtcstat ] && /opt/rdtcmgr/sbin/rdtcstat $i | dos2ux | tr\x0c " "
+                echo "\n"
+        done
+    }
+
+    if [ -x $dtc ] ; then
+       exec_command DtcInfo "Managed DTC Configuration (via $dtc)"
+    fi
+
+    done # for loop

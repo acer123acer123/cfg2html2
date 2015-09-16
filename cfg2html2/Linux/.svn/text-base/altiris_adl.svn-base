@@ -1,0 +1,8 @@
+ADLBase="/opt/altiris/deployment/adlagent"
+if [ -f $ADLBase/conf/adlagent.conf ]
+then
+  new_category "Altiris ADL Agent logfiles and settings"
+  exec_command "cat $ADLBase/conf/adlagent.conf" "Altiris ADLagent settings file"
+  exec_command "cat $ADLBase/log/adlagentdbg.txt" "Altris ADLagent Debugging file"
+  exec_command "cat $ADLBase/log/adlagentIpTrace.txt" "Altiris ADLagent IP tracing file"
+fi

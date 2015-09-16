@@ -1,0 +1,14 @@
+hpo=$(lslpp -l | grep -i OPC >/dev/null 2>&1)
+hpo_rc=$?
+if [[ $hpo_rc = 0 ]]
+then
+    exec_command "lslpp -L |grep -i OPC" "Installed HP OpenView Version"
+    OPCINFO=$(lslpp -f OPC.obj | grep opcinfo)
+    exec_command "cat $OPCINFO" "OPCINFO"
+    OPCDCODE=$(lslpp -f OPC.obj | grep opcdcode)
+    exec_command "$OPCDCODE /var/lpp/OV/conf/OpC/monitor | grep DESCRIPTION" \
+	"HP OpenView Configuration MONITOR"
+    exec_command "$OPCDCODE /var/lpp/OV/conf/OpC/le | grep DESCRIPTION" \
+	"HP OpenView Configuration LOGGING"
+fi
+

@@ -1,0 +1,9 @@
+output=$(lsvg -l $(lsvg -o) | grep -v 'LV NAME' | grep -v '.*:' | \
+awk '{print $1}' | while read i
+do
+ echo "Logical Volume: $i"
+ getlvcb -AT $i | sed 's/^[ ]*     / -/g' | grep -v '^ $'
+done)
+exec_command "echo \"\$output\" | uniq | sed '\$d'" \
+	"Get Logical Volume ControlBlock (EXTENDED)" 
+

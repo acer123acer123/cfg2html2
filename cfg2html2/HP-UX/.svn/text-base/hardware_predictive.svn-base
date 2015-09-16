@@ -1,0 +1,15 @@
+get_pred() {
+  /opt/pred/bin/psconfig print configuration 2>/dev/null \
+	| /usr/bin/grep -v "^----------"
+}
+if [ -x /opt/pred/bin/psconfig ] ;
+then
+  exec_command get_pred "Predictive Configuration"
+  AddText "WARNING: Predictive is OBSOLETE and should be removed from your system!"
+fi 
+
+if [ -r /opt/hpservices/etc/motprefs ]
+then
+  exec_command "cat /opt/hpservices/etc/motprefs" "ISEE Configuration"
+  AddText "WARNING: ISEE is OBSOLETE and should be removed/purged (/opt/hpservices) from your system!"
+fi

@@ -1,0 +1,34 @@
+# MySQL Database
+[ -r /etc/my.cnf ] && \
+	new_category "MySQL Database" && \
+	exec_command "grep -v ^# /etc/my.cnf" "MySQL Settings"    
+
+# Oracle
+if [ -f /etc/oratab ] ; then
+  new_category "Oracle"
+
+  exec_command $PLUGINS/oracle_collect.sh "Oracle Databases"
+fi
+
+#Informix
+if [ "$(grep 'informix' /etc/passwd)" != "" ] ; then
+  new_category "Informix"
+  exec_command "su - informix -c \"echo Informix Home=$INFORMIXDIR\"" \
+  	"Informix Home"
+  exec_command "su - informix -c \"onstat -d\"" "Informix Databases"
+fi
+
+Tip/IX
+if [ "$(grep 'tipadm' /etc/passwd)" != "" ] ; then
+  new_category "TIP/ix"
+  exec_command "/usr/tipix/bin/tipinstall -u" "TIP/ix Settings"
+  exec_command "su - tipadm -c \"pingtip\"|grep Server" "TIP/ix Daemons"
+fi
+
+#SAP
+if [ -d /usr/sap ] ; then
+  new_category "SAP R3"
+  exec_command get_sap.sh "SAP R3 Configuration"
+  [ -f /etc/sapconf ] && exec_command "cat /etc/sapconf" \
+	"Local configured SAP R3 Instances"
+fi
