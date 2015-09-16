@@ -1,7 +1,0 @@
-output=$(for i in $(lsdev -C -S a -F 'name'|grep en[0-9])
-           do
-              echo "$i:"
-              entstat -d $i |egrep -i "Media|Status"
-           done)
-exec_command "echo \"\$output\"" "Adapter Modes"
-

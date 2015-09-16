@@ -1,7 +1,0 @@
-mount | grep '^ ' | egrep -v "node| /proc | /auto " | awk '{print $2}' | while read i
-do
-   
-  echo "-- Status of $i --"
-  echo "$(defragfs -q $i)"
-done
-

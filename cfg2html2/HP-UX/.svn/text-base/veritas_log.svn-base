@@ -1,6 +1,0 @@
-for f in /var/opt/vmsa/logs/command /var/vx/isis/command.log
-do
-  if [ -r $f ] ; then
-    exec_command "tail -100 $f" "VxVM GUI log end"
-  fi
-done

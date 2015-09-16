@@ -1,7 +1,0 @@
-printf '%-10s %s %2s %s %-14s %s\n' IDENTIFIER DATE/TIMESTAMP T C \
-	RESOURCE_NAME DESCRIPTION
-	errpt | tail +2 |  \
-	awk '{printf "%-10s %s-%s-%s %s:%s %2s %s %-14s %s %s %s %s %s %s %s %s %s %s\n",
-      $1, substr($2,3,2), substr($2,1,2), substr($2,9,2), substr($2,5,2), substr($2,7,2),
-     $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15}'
-

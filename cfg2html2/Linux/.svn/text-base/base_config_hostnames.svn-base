@@ -1,5 +1,0 @@
-uname -a
-echo  "DNS Domainname  = "`dnsdomainname `
-echo  "NIS Domainname  = "`domainname 2>/dev/null `
-echo  "Hostname (short)= "`hostname`
-echo  "Hostname (FQDN) = "`hostname`

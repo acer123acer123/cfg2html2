@@ -1,7 +1,0 @@
- if [ -e /proc/net/bonding ]; then
-       for BondIF in `ls -1 /proc/net/bonding`
-       do
-         echo "$BondIF"
-	 cat /proc/net/bonding/$BondIF
-       done
-fi

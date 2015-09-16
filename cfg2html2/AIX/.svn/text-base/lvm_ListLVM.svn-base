@@ -1,8 +1,0 @@
-lsvg | while read vg
-  do
-     echo --------------------------------
-     echo "   Volume Group: $vg"
-     echo --------------------------------
-     lsvg -l $vg | egrep -v ":$|^LV" | while read lv rest; do lslv $lv; echo $SEP100;
- done | uniq | sed '$d'
-done

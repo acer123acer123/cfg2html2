@@ -1,5 +1,0 @@
-lsvg | while read i
-do 
-  lsvg -l $i
-  echo $SEP80
-done | uniq | sed '$d'
